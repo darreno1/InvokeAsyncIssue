@@ -1,0 +1,41 @@
+﻿@inject IJSRuntime jSRuntime
+
+@using System.Threading
+@using Microsoft.JSInterop;
+
+<br/>
+<a>@msg</a>
+<br/>
+<button @onclick="LongRunningWork">Get Location</button>
+
+@code {
+
+    private string msg = "Waiting...";
+    public class Location
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+
+    protected async Task<Location> LongRunningWork()
+    {
+        Location result = new Location();
+        try
+        {
+            // killed off if timeout happens. 
+            using (CancellationTokenSource source = new CancellationTokenSource())
+            {
+                source.CancelAfter(TimeSpan.FromSeconds(5));
+                var task = jSRuntime.InvokeAsync<Location>("MyJs.GetLocation", source.Token, null);
+                result = await task;
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            msg = ex.Message;
+        }
+        return null;
+    }
+
+}
